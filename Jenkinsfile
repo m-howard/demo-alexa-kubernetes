@@ -2,10 +2,10 @@ pipeline {
   agent any
 
   environment {
-    PROJECT = 'devops-capstone-app'
+    PROJECT = 'alexa-demo-app'
     DOCKER_CREDENTIALS = credentials('dockerhub')
-    STACK_NAME = 'CapstoneK8sCluster'
-    CLUSTER_NAME = 'CapstoneK8sCluster'
+    STACK_NAME = 'DemoAlexaK8sCluster'
+    CLUSTER_NAME = 'DemoAlexaK8sCluster'
     STACK_S3_BUCKET = "markus-udacity-capstone-k8s-app"
   }
 
