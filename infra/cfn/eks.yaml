@@ -1,0 +1,159 @@
+---
+AWSTemplateFormatVersion: '2010-09-09'
+Description: 'Simple AWS EKS Stack'
+
+Parameters:
+
+  VpcId:
+    Description: The VPC id of the VPC the cluster will live in.
+    Type: AWS::EC2::VPC::Id
+  SubnetIds:
+    Description: The subnets the cluster will span.
+    Type: List<AWS::EC2::Subnet::Id>
+
+  ClusterName:
+    Description: Name of the EKS cluster.
+    Type: String
+    Default: CapstoneK8sCluster
+  NodeGroupName:
+    Description: Unique identifier for the worker node group.
+    Type: String
+    Default: CapstoneK8sClusterNodeGroup
+
+  KeyName:
+    Description: The EC2 key pair name for SSH access.
+    Type: AWS::EC2::KeyPair::KeyName
+
+  WorkerInstanceType:
+    Description: EC2 instance type (size) for the worker node instances.
+    Type: String
+    Default: t3.medium
+
+  MinWorkerNodes:
+    Description: Minimum number of worker nodes.
+    Type: Number
+    Default: 2
+  MaxWorkerNodes:
+    Description: Maximum number of worker nodes in ASG
+    Type: Number
+    Default: 5
+  MaxNodePods:
+    Description: Maximum number of pods on a node.
+    Type: Number
+    Default: 8
+
+Metadata:
+  AWS::CloudFormation::Interface:
+    ParameterGroups:
+      -
+        Label:
+          default: "EKS VPC Network Configuration"
+        Parameters:
+          - VpcId
+          - Subnetids
+      -
+        Label:
+          default: "K8s Configuration"
+        Parameters:
+          - ClusterName
+          - NodeGroupName
+          - KeyName
+          - WorkerInstanceType
+          - MinWorkerNodes
+          - MaxWorkerNodes
+          - MaxNodePods
+
+Resources:
+  # IAM -----------------------------------
+  ClusterRole:
+    Description: Allows EKS to manage clusters on your behalf.
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+            Effect: Allow
+            Principal:
+              Service:
+                - eks.amazonaws.com
+            Action: sts:AssumeRole
+      ManagedPolicyArns: 
+        - arn:aws:iam::aws:policy/AmazonEKSClusterPolicy
+        - arn:aws:iam::aws:policy/AmazonEKSServicePolicy
+  WorkerRole:
+    Type: "AWS::IAM::Role"
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+                - ec2.amazonaws.com
+            Action:
+              - "sts:AssumeRole"
+      ManagedPolicyArns:
+        - "arn:aws:iam::aws:policy/AmazonEKSWorkerNodePolicy"
+        - "arn:aws:iam::aws:policy/AmazonEKS_CNI_Policy"
+        - "arn:aws:iam::aws:policy/AmazonEC2ContainerRegistryReadOnly"
+
+  # Cluster -------------------------------
+  K8sCluster:
+    Type: 'AWS::EKS::Cluster'
+    Properties:
+      Name: !Ref ClusterName
+      RoleArn: !GetAtt ClusterRole.Arn
+      Version: 1.14
+      ResourcesVpcConfig:
+        SubnetIds: !Ref SubnetIds
+  WorkerNodeGroup:
+    Type: 'AWS::EKS::Nodegroup'
+    DependsOn: K8sCluster
+    Properties:
+      ClusterName: !Ref ClusterName
+      NodegroupName: !Ref NodeGroupName
+      NodeRole: !GetAtt WorkerRole.Arn
+      InstanceTypes:
+        - !Ref WorkerInstanceType
+      DiskSize: 25
+      RemoteAccess:
+        Ec2SshKey: !Ref KeyName
+      Subnets: !Ref SubnetIds
+      ScalingConfig:
+        DesiredSize: 3
+        MinSize: !Ref MinWorkerNodes
+        MaxSize: !Ref MaxWorkerNodes
+      ForceUpdateEnabled: true
+      Version: 1.14
+      Labels:
+        Project: !Sub '${AWS::StackName}'
+
+Outputs:
+
+  K8sClusterName:
+    Value: !Ref K8sCluster
+    Description: Cluster Name
+    Export:
+      Name:
+        Fn::Sub: "${AWS::StackName}-ClusterName"
+
+  K8sClusterArn:
+    Value: !GetAtt K8sCluster.Arn
+    Description: Cluster Arn
+    Export:
+      Name:
+        Fn::Sub: "${AWS::StackName}-ClusterArn"
+
+  K8sClusterEndpoint:
+    Value: !GetAtt K8sCluster.Endpoint
+    Description: Cluster Endpoint
+    Export:
+      Name:
+        Fn::Sub: "${AWS::StackName}-ClusterEndpoint"
+
+  K8sNodeGroupArn:
+    Value: !GetAtt WorkerNodeGroup.Arn
+    Description: Cluster Worker Nodes
+    Export:
+      Name:
+        Fn::Sub: "${AWS::StackName}-NodeGroupArn"

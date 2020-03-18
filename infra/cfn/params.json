@@ -1,0 +1,22 @@
+[
+  {
+    "ParameterKey": "ClusterName",
+    "ParameterValue": "CapstoneK8sCluster"
+  },
+  {
+    "ParameterKey": "NodeGroupName",
+    "ParameterValue": "CapstoneK8sClusterNodeGroup"
+  },
+  {
+    "ParameterKey": "VpcId",
+    "ParameterValue": "vpc-0a342304890fa3a65"
+  },
+  {
+    "ParameterKey": "SubnetIds",
+    "ParameterValue": "subnet-09dbd64d760c78d0b, subnet-0576ae6f8c0afc228"
+  },
+  {
+    "ParameterKey": "KeyName",
+    "ParameterValue": "pipeline"
+  }
+]
