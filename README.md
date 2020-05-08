@@ -1,4 +1,4 @@
-# Udacity Capstone Project
+# Demo Alexa Kubernetes
 
 ## Cloudformation
 * https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-eks-cluster.html
